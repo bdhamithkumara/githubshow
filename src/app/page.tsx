@@ -150,7 +150,7 @@ export default function Home() {
                     </button>
                   </div>
                   <pre className="p-4 bg-black/50 rounded-xl overflow-x-auto text-[10px] md:text-xs text-white/40 font-mono border border-white/5">
-                    <code>{`[![GitHub Contribution Blast](${typeof window !== 'undefined' ? window.location.origin : ''}/api/v1/visualize/${username})](https://github.com/${username})`}</code>
+                    <code>{`[![Contribution Blast](${typeof window !== 'undefined' ? window.location.origin : ''}/api/v1/visualize/${username})](${typeof window !== 'undefined' ? window.location.origin : ''})`}</code>
                   </pre>
                 </div>
               </div>
