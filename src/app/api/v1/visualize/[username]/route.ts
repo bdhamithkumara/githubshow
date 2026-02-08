@@ -30,7 +30,8 @@ export async function GET(
 function generateSVG(data: any, username: string) {
   const width = 800;
   const height = 200;
-  const gameDurationBase = 40; // Slower to match web pacing
+  const gameDurationBase = 40; 
+  const laserHitX = 180; // Point where lasers "hit"
 
   let enemies = "";
   
@@ -44,10 +45,9 @@ function generateSVG(data: any, username: string) {
   const streamLength = 4000; 
 
   allDays.forEach(({ day, index }) => {
-    // Exact GitHub Contribution Greens
     const colors = ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"];
     const color = colors[day.level] || colors[0];
-    const size = 6 + day.level * 1.8; // Slightly larger for better readability
+    const size = 6 + day.level * 1.8;
     
     const seed = index * 1337 + day.count * 31;
     const rnd = (seed % 1000) / 1000; 
@@ -59,27 +59,40 @@ function generateSVG(data: any, username: string) {
     const speedFactor = 0.8 + ((seed % 20) / 20) * 0.7;
     const duration = gameDurationBase / speedFactor;
 
+    // Calculate exact time to hit x=180
+    // Animation goes from xStart to -200
+    const totalDist = xStart + 200;
+    const distToHit = xStart - laserHitX;
+    const tHit = distToHit / totalDist;
+    // ensure tHit is between 0 and 1 (it should be, since xStart > width > 180)
+    const tHitFixed = Math.max(0, Math.min(0.99, tHit));
+    const tHitEnd = Math.min(1, tHitFixed + 0.02); // fade out duration
+
     const delay = ((seed % 50) / 10).toFixed(1);
 
     enemies += `
       <g>
-        <rect x="${xStart}" y="${y - size/2}" width="${size}" height="${size}" fill="${color}" rx="1" opacity="0.9">
+        <rect x="${xStart}" y="${y - size/2}" width="${size}" height="${size}" fill="${color}" rx="1">
           <animate attributeName="x" from="${xStart}" to="${-200}" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
           
-          <!-- Hit flicker simulation -->
-          <animate attributeName="fill" values="${color};${color};#ffffff;${color};#39d353;${color}" 
-            keyTimes="0;0.1;0.12;0.14;0.16;1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+          <!-- Destruction Logic: Opacity drops to 0 at tHit -->
+          <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;${tHitFixed};${tHitEnd};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+          
+          <!-- Explosion Effect at tHit -->
+          <animate attributeName="width" values="${size};${size};${size*3};${size*3}" keyTimes="0;${tHitFixed};${tHitEnd};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+          <animate attributeName="height" values="${size};${size};${size*0.1};${size*0.1}" keyTimes="0;${tHitFixed};${tHitEnd};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+          <animate attributeName="fill" values="${color};${color};#ffffff;#ffffff" keyTimes="0;${tHitFixed};${tHitFixed};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
         </rect>
       </g>
     `;
   });
 
-  // Dual Laser Particles (Sparks)
-  const particles = Array.from({ length: 15 }).map((_, i) => `
-    <rect width="1.5" height="1.5" fill="${i % 2 ? '#58a6ff' : '#3fb950'}" opacity="0">
-      <animate attributeName="opacity" values="0;1;0" dur="${0.2 + i * 0.04}s" repeatCount="indefinite" begin="${i * 0.1}s" />
-      <animate attributeName="x" from="60" to="${width/2 + i * 20}" dur="${0.2 + i * 0.04}s" repeatCount="indefinite" begin="${i * 0.1}s" />
-      <animate attributeName="y" from="${height/2 + (i%2 ? -2 : 2)}" to="${height/2 + (i - 7) * 10}" dur="${0.2 + i * 0.04}s" repeatCount="indefinite" begin="${i * 0.1}s" />
+  // Rapid Fire Projectiles (Stream)
+  const particles = Array.from({ length: 25 }).map((_, i) => `
+    <rect width="4" height="1" fill="${i % 2 ? '#58a6ff' : '#3fb950'}" opacity="0">
+      <animate attributeName="opacity" values="0;1;0" dur="0.3s" repeatCount="indefinite" begin="${i * 0.03}s" />
+      <animate attributeName="x" from="25" to="${width}" dur="0.3s" repeatCount="indefinite" begin="${i * 0.03}s" />
+      <animate attributeName="y" from="${height/2 + (i%2 ? -2 : 2)}" to="${height/2 + (i - 12) * 5}" dur="0.3s" repeatCount="indefinite" begin="${i * 0.03}s" />
     </rect>
   `).join("");
 
@@ -95,22 +108,10 @@ function generateSVG(data: any, username: string) {
       
       <!-- Parallax Starfield (3 Layers) -->
       <g opacity="0.1">
-        <!-- Deep Stars (Slowest) -->
-        ${Array.from({ length: 30 }).map((_, i) => `
-          <circle cx="${Math.random() * width}" cy="${Math.random() * height}" r="0.5" fill="white">
-            <animate attributeName="cx" from="${Math.random() * width}" to="${-width}" dur="${200 + i * 5}s" repeatCount="indefinite" />
-          </circle>
-        `).join("")}
-        <!-- Mid Stars -->
-        ${Array.from({ length: 20 }).map((_, i) => `
-          <circle cx="${Math.random() * width}" cy="${Math.random() * height}" r="0.8" fill="#58a6ff">
-            <animate attributeName="cx" from="${Math.random() * width}" to="${-width}" dur="${100 + i * 3}s" repeatCount="indefinite" />
-          </circle>
-        `).join("")}
-        <!-- Near Stars (Fastest) -->
-        ${Array.from({ length: 10 }).map((_, i) => `
-          <circle cx="${Math.random() * width}" cy="${Math.random() * height}" r="1.2" fill="#3fb950">
-            <animate attributeName="cx" from="${Math.random() * width}" to="${-width}" dur="${40 + i * 2}s" repeatCount="indefinite" />
+        ${Array.from({ length: 40 }).map((_, i) => `
+          <circle cx="${Math.random() * width}" cy="${Math.random() * height}" r="${Math.random() * 1.5}" fill="white">
+             <animate attributeName="opacity" values="0.3;1;0.3" dur="${2 + Math.random() * 3}s" repeatCount="indefinite" />
+             <animate attributeName="cx" from="${Math.random() * width}" to="${-width}" dur="${200 + i * 5}s" repeatCount="indefinite" />
           </circle>
         `).join("")}
       </g>
@@ -120,32 +121,15 @@ function generateSVG(data: any, username: string) {
       <!-- Contributions -->
       ${enemies}
 
-      <!-- Player Ship & Dual Lasers -->
-      <g>
-        <path d="M 55,${height / 2} L 15,${height / 2 - 14} L 15,${height / 2 + 14} Z" fill="url(#shipGrad)">
-          <animateTransform attributeName="transform" type="translate" values="0 0; 12 -65; -10 85; 20 -45; 0 0" dur="18s" repeatCount="indefinite" />
-          <animateTransform attributeName="transform" type="rotate" values="0; -25; 30; -18; 0" dur="18s" repeatCount="indefinite" additive="sum" />
+      <!-- Tiny Fighter Ship -->
+      <g transform="translate(10, 0)"> 
+        <path d="M 35,${height / 2} L 15,${height / 2 - 7} L 15,${height / 2 + 7} Z" fill="url(#shipGrad)">
+          <animateTransform attributeName="transform" type="translate" values="0 0; 3 -20; -3 30; 5 -15; 0 0" dur="12s" repeatCount="indefinite" />
+          <animateTransform attributeName="transform" type="rotate" values="0; -5; 5; -3; 0" dur="12s" repeatCount="indefinite" additive="sum" />
         </path>
-        
-        <!-- Dual Laser Firing Patterns -->
-        <g>
-          <!-- Top Laser -->
-          <line x1="55" y1="${height/2 - 4}" x2="${width}" y2="${height/2 - 4}" stroke="#58a6ff" stroke-width="1.8" opacity="0">
-            <animate attributeName="opacity" values="0;1;0" dur="0.18s" repeatCount="indefinite" />
-            <animate attributeName="x1" from="55" to="${width}" dur="0.18s" repeatCount="indefinite" />
-            <animate attributeName="x2" from="80" to="${width + 60}" dur="0.18s" repeatCount="indefinite" />
-          </line>
-          <!-- Bottom Laser (Slight Offset) -->
-          <line x1="55" y1="${height/2 + 4}" x2="${width}" y2="${height/2 + 4}" stroke="#3fb950" stroke-width="1.2" opacity="0">
-            <animate attributeName="opacity" values="0;0.8;0" dur="0.22s" repeatCount="indefinite" begin="0.05s" />
-            <animate attributeName="x1" from="55" to="${width}" dur="0.22s" repeatCount="indefinite" begin="0.05s" />
-            <animate attributeName="x2" from="80" to="${width + 40}" dur="0.22s" repeatCount="indefinite" begin="0.05s" />
-          </line>
-          <animateTransform attributeName="transform" type="translate" values="0 0; 12 -65; -10 85; 20 -45; 0 0" dur="18s" repeatCount="indefinite" />
-        </g>
       </g>
 
-      <!-- HUD UI (Clean Look) -->
+      <!-- HUD Labels -->
       <rect x="20" y="10" width="160" height="24" fill="#0d1117" stroke="#30363d" rx="4" />
       <text x="30" y="26" fill="#58a6ff" font-family="monospace" font-size="9" font-weight="900" style="letter-spacing: 1px;">MISSION: ${username.toUpperCase()}</text>
       
