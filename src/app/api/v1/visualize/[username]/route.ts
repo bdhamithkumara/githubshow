@@ -42,7 +42,7 @@ function generateSVG(data: any, username: string) {
     });
   });
 
-  const MAX_ENTITIES = 100;
+  const MAX_ENTITIES = 60;
   const step = Math.ceil(allDays.length / MAX_ENTITIES);
   const filteredDays = allDays.filter((_, i) => i % step === 0);
 
@@ -67,7 +67,7 @@ function generateSVG(data: any, username: string) {
     // Only target ~25% of enemies to reduce bullet clutter
     // Use modulo for deterministic behavior
     const delay = ((seed % 50) / 10).toFixed(1);
-    const isTarget = index % 20 === 0;
+    const isTarget = index % 15 === 0; // 1 in 15 with 60 entities = 4 shots total
 
     if (isTarget) {
       // 1. TARGETED ENEMY -> GETS A BULLET
@@ -89,11 +89,8 @@ function generateSVG(data: any, username: string) {
            <!-- Exploding Enemy -->
            <rect x="${xStart}" y="${y - size/2}" width="${size}" height="${size}" fill="${color}" rx="1">
               <animate attributeName="x" from="${xStart}" to="${-200}" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+              <!-- Destruction: Just Opacity/Fill (Performance Optimization) -->
               <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;${tHit};${tExplode};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-              
-              <!-- Impact Effect -->
-              <animate attributeName="width" values="${size};${size};${size*3};${size}" keyTimes="0;${tHit};${tExplode};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-              <animate attributeName="height" values="${size};${size};${size*3};${size}" keyTimes="0;${tHit};${tExplode};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
               <animate attributeName="fill" values="${color};${color};#ffffff;#ffffff" keyTimes="0;${tHit};${tHit};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
            </rect>
         </g>
@@ -127,8 +124,9 @@ function generateSVG(data: any, username: string) {
       </defs>
       <rect width="100%" height="100%" fill="#0d1117" rx="10" />
       
-      <g opacity="0.3">
-        ${Array.from({ length: 30 }).map((_, i) => `
+      <!-- Static Starfield (Maximum Performance) -->
+      <g opacity="0.2">
+        ${Array.from({ length: 20 }).map((_, i) => `
           <circle cx="${Math.random() * width}" cy="${Math.random() * height}" r="${Math.random() * 1.5}" fill="white" />
         `).join("")}
       </g>
