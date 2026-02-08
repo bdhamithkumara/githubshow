@@ -63,45 +63,51 @@ function generateSVG(data: any, username: string) {
     const speedFactor = 0.8 + ((seed % 20) / 20) * 0.7;
     const duration = gameDurationBase / speedFactor;
 
+    // INTERCEPTION LOGIC
+    // We want the bullet and enemy to meet at laserHitX
+    // Enemy moves xStart -> -200
+    // Bullet moves 50 -> laserHitX
+    
     const totalDist = xStart + 200;
     const distToHit = xStart - laserHitX;
-    const tHit = distToHit / totalDist;
-    const tHitFixed = Math.max(0, Math.min(0.99, tHit));
-    const tHitEnd = Math.min(1, tHitFixed + 0.1); 
+    const pctHit = distToHit / totalDist; // 0.0 to 1.0 fraction of duration
+    
+    // Clamp values for safety
+    const tHit = Math.max(0.01, Math.min(0.90, pctHit));
+    const tExplode = tHit + 0.02;
 
     const delay = ((seed % 50) / 10).toFixed(1);
 
+    // 1. The Bullet (Paired to this enemy)
+    // Travels from Ship (x=50) to Collision (x=laserHitX) over tHit duration
     enemies += `
       <g>
-        <rect x="${xStart}" y="${y - size/2}" width="${size}" height="${size}" fill="${color}" rx="1">
-          <animate attributeName="x" from="${xStart}" to="${-200}" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-          <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;${tHitFixed};${tHitEnd};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-          <animate attributeName="fill" values="${color};${color};#ffffff;#ffffff" keyTimes="0;${tHitFixed};${tHitFixed};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-        </rect>
+         <!-- Bullet: Moves to target, then vanishes -->
+         <rect x="50" y="${y}" width="10" height="2" fill="#58a6ff" rx="1" opacity="0">
+            <animate attributeName="x" values="50; ${laserHitX}; ${laserHitX + 50}" keyTimes="0; ${tHit}; 1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+            <animate attributeName="opacity" values="1; 1; 0; 0" keyTimes="0; ${tHit}; ${tHit}; 1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+         </rect>
+
+         <!-- Enemy Box: Moves left, explodes at tHit -->
+         <rect x="${xStart}" y="${y - size/2}" width="${size}" height="${size}" fill="${color}" rx="1">
+            <animate attributeName="x" from="${xStart}" to="${-200}" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+            
+            <!-- Destruction: Visible -> Flash White -> Invisible -->
+            <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;${tHit};${tExplode};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+            <animate attributeName="fill" values="${color};${color};#ffffff;#ffffff" keyTimes="0;${tHit};${tHit};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+            
+            <!-- Impact Scale Effect -->
+            <animate attributeName="width" values="${size};${size};${size*2};${size}" keyTimes="0;${tHit};${tExplode};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+            <animate attributeName="height" values="${size};${size};${size*2};${size}" keyTimes="0;${tHit};${tExplode};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+         </rect>
       </g>
     `;
   });
 
-  // Automated Patrol Ship & Bullets
-  // The ship will sweep up and down (Y: 20 -> 180 -> 20) over 10 seconds
+  // Automated Patrol Ship (No independent bullets now)
   const shipAnimation = `
     <animateTransform attributeName="transform" type="translate" values="0 20; 0 160; 0 20" dur="8s" repeatCount="indefinite" />
   `;
-
-  // Bullets need to spawn from the ship's current Y
-  // We simulate this by giving them the SAME transform animation as the ship
-  const particles = Array.from({ length: 15 }).map((_, i) => `
-    <g>
-      ${shipAnimation} <!-- Sync movement with ship -->
-      <rect width="8" height="2" fill="#58a6ff" rx="1" opacity="0">
-        <!-- Bullet moves across screen -->
-        <animate attributeName="x" from="40" to="${width + 50}" dur="0.6s" repeatCount="indefinite" begin="${i * 0.5}s" />
-        <animate attributeName="opacity" values="0;1;0" dur="0.6s" repeatCount="indefinite" begin="${i * 0.5}s" />
-        <!-- Y position is fixed relative to the moving group -->
-        <animate attributeName="y" from="10" to="10" dur="0.6s" repeatCount="indefinite" begin="${i * 0.5}s" /> 
-      </rect>
-    </g>
-  `).join("");
 
   return `
     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 ${width} ${height}" width="${width}" height="${height}">
@@ -119,8 +125,7 @@ function generateSVG(data: any, username: string) {
         `).join("")}
       </g>
 
-      <g>${particles}</g>
-
+      <!-- Enemies & Targeted Projectiles -->
       ${enemies}
 
       <!-- Patrolling Fighter Ship -->
