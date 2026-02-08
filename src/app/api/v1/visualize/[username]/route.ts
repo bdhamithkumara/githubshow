@@ -66,6 +66,7 @@ function generateSVG(data: any, username: string) {
     // TARGETING LOGIC
     // Only target ~25% of enemies to reduce bullet clutter
     // Use modulo for deterministic behavior
+    const delay = ((seed % 50) / 10).toFixed(1);
     const isTarget = index % 4 === 0;
 
     if (isTarget) {
