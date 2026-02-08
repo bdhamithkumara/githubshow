@@ -30,48 +30,56 @@ export async function GET(
 function generateSVG(data: any, username: string) {
   const width = 800;
   const height = 200;
-  const gameDurationBase = 35; 
+  const gameDurationBase = 30; 
 
   let enemies = "";
   
-  const allDays: { day: any; w: number; d: number }[] = [];
-  data.weeks.forEach((week: any, wIndex: number) => {
-    week.days.forEach((day: any, dIndex: number) => {
-      if (day.count > 0) allDays.push({ day, w: wIndex, d: dIndex });
+  const allDays: { day: any; index: number }[] = [];
+  data.weeks.forEach((week: any) => {
+    week.days.forEach((day: any) => {
+      if (day.count > 0) allDays.push({ day, index: allDays.length });
     });
   });
 
-  const filteredDays = allDays.filter((_, i) => (i % 2 === 0));
+  // "Asteroid Field" Logic:
+  // Instead of ordering by date (which creates "walls" of commits),
+  // we Shuffle/Randomize the positions to create a uniform field of debris.
+  
+  // We'll spread the asteroids over a "Stream Length"
+  const streamLength = 4000; // Pixels of content off-screen
 
-  filteredDays.forEach(({ day, w, d }, index) => {
+  allDays.forEach(({ day, index }) => {
     const colors = ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"];
     const color = colors[day.level] || colors[0];
     const size = 5 + day.level * 1.5;
     
-    const xBase = width + w * 180 + d * 40;
-    const xJitter = ((w * 144 + d * 23 + index * 19) % 180) - 90;
-    const xStart = xBase + xJitter;
+    // Pseudo-random number generator function (seeded by index+username hash ideally, but index is fine here)
+    const seed = index * 1337 + day.count * 31;
+    const rnd = (seed % 1000) / 1000; // 0.0 to 1.0
+    const rnd2 = ((seed * 7) % 1000) / 1000;
 
-    const speedFactor = 0.85 + ((w * 11 + d * 13) % 10) * 0.04; 
+    // Random X Position along the stream
+    // width + (0 to streamLength)
+    const xStart = width + (rnd * streamLength); 
+
+    // Random Y Position (spread across height, avoid very top/bottom)
+    const y = 25 + (rnd2 * (height - 50)); 
+
+    // Random Speed (0.8x to 1.5x)
+    const speedFactor = 0.8 + ((seed % 20) / 20) * 0.7;
     const duration = gameDurationBase / speedFactor;
-    
-    const yJitter = ((w * 17 + d * 37) % 30) - 15;
-    const y = 45 + d * 16 + yJitter;
 
-    const delay = (w * 1.8 + (index % 12) * 0.4).toFixed(1);
+    // Random Start Time Delay (0 to 5s) to further de-sync
+    const delay = ((seed % 50) / 10).toFixed(1);
 
     enemies += `
       <g>
-        <rect x="${xStart}" y="${y - size/2}" width="${size}" height="${size}" fill="${color}" rx="1">
-          <animate attributeName="x" from="${xStart}" to="${-100}" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+        <rect x="${xStart}" y="${y - size/2}" width="${size}" height="${size}" fill="${color}" rx="1" opacity="0.9">
+          <animate attributeName="x" from="${xStart}" to="${-200}" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
           
-          <!-- Intensive 'Hit' simulation: Flickers white-hot and pulses when in range of lasers (~x:50-200) -->
+          <!-- Hit flicker simulation -->
           <animate attributeName="fill" values="${color};${color};#ffffff;${color};#39d353;${color}" 
             keyTimes="0;0.1;0.12;0.14;0.16;1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-          <animate attributeName="width" values="${size};${size};${size*1.5};${size}" 
-            keyTimes="0;0.1;0.13;1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-          <animate attributeName="height" values="${size};${size};${size*1.5};${size}" 
-            keyTimes="0;0.1;0.13;1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
         </rect>
       </g>
     `;
