@@ -42,9 +42,7 @@ function generateSVG(data: any, username: string) {
     });
   });
 
-  // performance optimization: Limit to 100 max observable entities to prevent lag
   const MAX_ENTITIES = 100;
-  // We can pick random ones or recent ones. Let's pick a random subset to keep the "field" look.
   const step = Math.ceil(allDays.length / MAX_ENTITIES);
   const filteredDays = allDays.filter((_, i) => i % step === 0);
 
@@ -55,7 +53,6 @@ function generateSVG(data: any, username: string) {
     const color = colors[day.level] || colors[0];
     const size = 6 + day.level * 1.8;
     
-    // Use index for determinism but add username hash if needed
     const seed = index * 1337 + day.count * 31;
     const rnd = (seed % 1000) / 1000; 
     const rnd2 = ((seed * 7) % 1000) / 1000;
@@ -78,8 +75,6 @@ function generateSVG(data: any, username: string) {
       <g>
         <rect x="${xStart}" y="${y - size/2}" width="${size}" height="${size}" fill="${color}" rx="1">
           <animate attributeName="x" from="${xStart}" to="${-200}" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-          
-          <!-- Optimized Destruction: Just Opacity and Fill (removed complex scale anims) -->
           <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;${tHitFixed};${tHitEnd};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
           <animate attributeName="fill" values="${color};${color};#ffffff;#ffffff" keyTimes="0;${tHitFixed};${tHitFixed};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
         </rect>
@@ -87,14 +82,25 @@ function generateSVG(data: any, username: string) {
     `;
   });
 
-  // Single Shot Projectiles (One by one)
-  // Fewer particles, spaced out by 0.6s
-  const particles = Array.from({ length: 6 }).map((_, i) => `
-    <rect width="8" height="2" fill="#58a6ff" rx="1" opacity="0">
-      <animate attributeName="opacity" values="0;1;0" dur="0.8s" repeatCount="indefinite" begin="${i * 0.6}s" />
-      <animate attributeName="x" from="40" to="${width + 50}" dur="0.8s" repeatCount="indefinite" begin="${i * 0.6}s" />
-      <animate attributeName="y" from="${height/2}" to="${height/2}" dur="0.8s" repeatCount="indefinite" begin="${i * 0.6}s" />
-    </rect>
+  // Automated Patrol Ship & Bullets
+  // The ship will sweep up and down (Y: 20 -> 180 -> 20) over 10 seconds
+  const shipAnimation = `
+    <animateTransform attributeName="transform" type="translate" values="0 20; 0 160; 0 20" dur="8s" repeatCount="indefinite" />
+  `;
+
+  // Bullets need to spawn from the ship's current Y
+  // We simulate this by giving them the SAME transform animation as the ship
+  const particles = Array.from({ length: 15 }).map((_, i) => `
+    <g>
+      ${shipAnimation} <!-- Sync movement with ship -->
+      <rect width="8" height="2" fill="#58a6ff" rx="1" opacity="0">
+        <!-- Bullet moves across screen -->
+        <animate attributeName="x" from="40" to="${width + 50}" dur="0.6s" repeatCount="indefinite" begin="${i * 0.5}s" />
+        <animate attributeName="opacity" values="0;1;0" dur="0.6s" repeatCount="indefinite" begin="${i * 0.5}s" />
+        <!-- Y position is fixed relative to the moving group -->
+        <animate attributeName="y" from="10" to="10" dur="0.6s" repeatCount="indefinite" begin="${i * 0.5}s" /> 
+      </rect>
+    </g>
   `).join("");
 
   return `
@@ -107,7 +113,6 @@ function generateSVG(data: any, username: string) {
       </defs>
       <rect width="100%" height="100%" fill="#0d1117" rx="10" />
       
-      <!-- Static Starfield (Performance Fix: Remove animations) -->
       <g opacity="0.3">
         ${Array.from({ length: 30 }).map((_, i) => `
           <circle cx="${Math.random() * width}" cy="${Math.random() * height}" r="${Math.random() * 1.5}" fill="white" />
@@ -116,18 +121,17 @@ function generateSVG(data: any, username: string) {
 
       <g>${particles}</g>
 
-      <!-- Contributions -->
       ${enemies}
 
-      <!-- Tiny Fighter Ship -->
-      <g transform="translate(10, 0)"> 
-        <path d="M 35,${height / 2} L 15,${height / 2 - 7} L 15,${height / 2 + 7} Z" fill="url(#shipGrad)">
-          <!-- Slow gentle float only -->
-          <animateTransform attributeName="transform" type="translate" values="0 0; 0 -10; 0 10; 0 0" dur="8s" repeatCount="indefinite" />
-        </path>
+      <!-- Patrolling Fighter Ship -->
+      <g>
+        ${shipAnimation}
+        <g transform="translate(10, 10)"> 
+          <path d="M 35,0 L 15,-7 L 15,7 Z" fill="url(#shipGrad)">
+          </path>
+        </g>
       </g>
 
-      <!-- HUD Labels -->
       <rect x="20" y="10" width="160" height="24" fill="#0d1117" stroke="#30363d" rx="4" />
       <text x="30" y="26" fill="#58a6ff" font-family="monospace" font-size="9" font-weight="900" style="letter-spacing: 1px;">MISSION: ${username.toUpperCase()}</text>
       
