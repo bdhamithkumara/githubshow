@@ -33,7 +33,8 @@ export default function Home() {
 
   const copyMarkdown = () => {
     const baseUrl = typeof window !== 'undefined' ? window.location.origin : '';
-    const markdown = `[![GitHub Galaxy Blast](${baseUrl}/api/v1/visualize/${username})](https://github.com/${username})`;
+    const timestamp = Date.now();
+    const markdown = `[![Contribution Blast](${baseUrl}/api/v1/visualize/${username}?t=${timestamp})](${baseUrl})`;
     navigator.clipboard.writeText(markdown);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);

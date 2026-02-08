@@ -30,7 +30,7 @@ export async function GET(
 function generateSVG(data: any, username: string) {
   const width = 800;
   const height = 200;
-  const gameDurationBase = 30; 
+  const gameDurationBase = 40; // Slower to match web pacing
 
   let enemies = "";
   
@@ -41,35 +41,24 @@ function generateSVG(data: any, username: string) {
     });
   });
 
-  // "Asteroid Field" Logic:
-  // Instead of ordering by date (which creates "walls" of commits),
-  // we Shuffle/Randomize the positions to create a uniform field of debris.
-  
-  // We'll spread the asteroids over a "Stream Length"
-  const streamLength = 4000; // Pixels of content off-screen
+  const streamLength = 4000; 
 
   allDays.forEach(({ day, index }) => {
+    // Exact GitHub Contribution Greens
     const colors = ["#161b22", "#0e4429", "#006d32", "#26a641", "#39d353"];
     const color = colors[day.level] || colors[0];
-    const size = 5 + day.level * 1.5;
+    const size = 6 + day.level * 1.8; // Slightly larger for better readability
     
-    // Pseudo-random number generator function (seeded by index+username hash ideally, but index is fine here)
     const seed = index * 1337 + day.count * 31;
-    const rnd = (seed % 1000) / 1000; // 0.0 to 1.0
+    const rnd = (seed % 1000) / 1000; 
     const rnd2 = ((seed * 7) % 1000) / 1000;
 
-    // Random X Position along the stream
-    // width + (0 to streamLength)
     const xStart = width + (rnd * streamLength); 
-
-    // Random Y Position (spread across height, avoid very top/bottom)
     const y = 25 + (rnd2 * (height - 50)); 
 
-    // Random Speed (0.8x to 1.5x)
     const speedFactor = 0.8 + ((seed % 20) / 20) * 0.7;
     const duration = gameDurationBase / speedFactor;
 
-    // Random Start Time Delay (0 to 5s) to further de-sync
     const delay = ((seed % 50) / 10).toFixed(1);
 
     enemies += `
