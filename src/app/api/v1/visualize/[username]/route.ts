@@ -63,45 +63,52 @@ function generateSVG(data: any, username: string) {
     const speedFactor = 0.8 + ((seed % 20) / 20) * 0.7;
     const duration = gameDurationBase / speedFactor;
 
-    // INTERCEPTION LOGIC
-    // We want the bullet and enemy to meet at laserHitX
-    // Enemy moves xStart -> -200
-    // Bullet moves 50 -> laserHitX
-    
-    const totalDist = xStart + 200;
-    const distToHit = xStart - laserHitX;
-    const pctHit = distToHit / totalDist; // 0.0 to 1.0 fraction of duration
-    
-    // Clamp values for safety
-    const tHit = Math.max(0.01, Math.min(0.90, pctHit));
-    const tExplode = tHit + 0.02;
+    // TARGETING LOGIC
+    // Only target ~25% of enemies to reduce bullet clutter
+    // Use modulo for deterministic behavior
+    const isTarget = index % 4 === 0;
 
-    const delay = ((seed % 50) / 10).toFixed(1);
+    if (isTarget) {
+      // 1. TARGETED ENEMY -> GETS A BULLET
+      const totalDist = xStart + 200;
+      const distToHit = xStart - laserHitX;
+      const pctHit = distToHit / totalDist; 
+      
+      const tHit = Math.max(0.01, Math.min(0.90, pctHit));
+      const tExplode = tHit + 0.02;
 
-    // 1. The Bullet (Paired to this enemy)
-    // Travels from Ship (x=50) to Collision (x=laserHitX) over tHit duration
-    enemies += `
-      <g>
-         <!-- Bullet: Moves to target, then vanishes -->
-         <rect x="50" y="${y}" width="10" height="2" fill="#58a6ff" rx="1" opacity="0">
-            <animate attributeName="x" values="50; ${laserHitX}; ${laserHitX + 50}" keyTimes="0; ${tHit}; 1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-            <animate attributeName="opacity" values="1; 1; 0; 0" keyTimes="0; ${tHit}; ${tHit}; 1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-         </rect>
+      enemies += `
+        <g>
+           <!-- Bullet: Moves to target, then vanishes -->
+           <rect x="50" y="${y}" width="10" height="2" fill="#58a6ff" rx="1" opacity="0">
+              <animate attributeName="x" values="50; ${laserHitX}; ${laserHitX + 50}" keyTimes="0; ${tHit}; 1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+              <animate attributeName="opacity" values="1; 1; 0; 0" keyTimes="0; ${tHit}; ${tHit}; 1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+           </rect>
 
-         <!-- Enemy Box: Moves left, explodes at tHit -->
-         <rect x="${xStart}" y="${y - size/2}" width="${size}" height="${size}" fill="${color}" rx="1">
-            <animate attributeName="x" from="${xStart}" to="${-200}" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-            
-            <!-- Destruction: Visible -> Flash White -> Invisible -->
-            <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;${tHit};${tExplode};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-            <animate attributeName="fill" values="${color};${color};#ffffff;#ffffff" keyTimes="0;${tHit};${tHit};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-            
-            <!-- Impact Scale Effect -->
-            <animate attributeName="width" values="${size};${size};${size*2};${size}" keyTimes="0;${tHit};${tExplode};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-            <animate attributeName="height" values="${size};${size};${size*2};${size}" keyTimes="0;${tHit};${tExplode};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
-         </rect>
-      </g>
-    `;
+           <!-- Exploding Enemy -->
+           <rect x="${xStart}" y="${y - size/2}" width="${size}" height="${size}" fill="${color}" rx="1">
+              <animate attributeName="x" from="${xStart}" to="${-200}" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+              <animate attributeName="opacity" values="1;1;0;0" keyTimes="0;${tHit};${tExplode};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+              
+              <!-- Impact Effect -->
+              <animate attributeName="width" values="${size};${size};${size*3};${size}" keyTimes="0;${tHit};${tExplode};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+              <animate attributeName="height" values="${size};${size};${size*3};${size}" keyTimes="0;${tHit};${tExplode};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+              <animate attributeName="fill" values="${color};${color};#ffffff;#ffffff" keyTimes="0;${tHit};${tHit};1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+           </rect>
+        </g>
+      `;
+    } else {
+      // 2. IGNORED ENEMY -> DRIFTS PAST (NO BULLET)
+      enemies += `
+        <g>
+           <rect x="${xStart}" y="${y - size/2}" width="${size}" height="${size}" fill="${color}" rx="1" opacity="0.8">
+              <animate attributeName="x" from="${xStart}" to="${-200}" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+              <!-- Simple fade out at very end -->
+              <animate attributeName="opacity" values="0.8;0.8;0" keyTimes="0;0.9;1" dur="${duration}s" repeatCount="indefinite" begin="-${delay}s" />
+           </rect>
+        </g>
+      `;
+    }
   });
 
   // Automated Patrol Ship (No independent bullets now)
