@@ -56,7 +56,7 @@ export default function Home() {
               <Rocket className="w-8 h-8 text-[#58a6ff]" />
             </div>
             <div>
-              <h1 className="text-3xl md:text-4xl font-bold tracking-tight bg-linear-to-r from-[#58a6ff] to-[#3fb950] bg-clip-text text-transparent">
+              <h1 className="text-3xl md:text-4xl font-bold tracking-tight text-white">
                 Contribution Blast
               </h1>
               <p className="text-white/40 text-sm font-mono tracking-widest uppercase">
