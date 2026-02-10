@@ -72,7 +72,6 @@ export default function Home() {
           </div>
         </header>
 
-        {/* Hero Section */}
         <section className="grid lg:grid-cols-2 gap-12 items-start">
           <div className="space-y-8 animate-in fade-in slide-in-from-left duration-1000">
             <div className="space-y-4">
@@ -85,7 +84,6 @@ export default function Home() {
               </p>
             </div>
 
-            {/* Input form */}
             <form onSubmit={handleFetch} className="relative max-w-md group">
               <div className="absolute inset-0 bg-linear-to-r from-[#58a6ff] to-[#3fb950] rounded-2xl blur opacity-10 group-focus-within:opacity-20 transition-opacity duration-500" />
               <div className="relative flex items-center p-2 bg-white/5 backdrop-blur-xl border border-white/10 rounded-2xl shadow-2xl overflow-hidden">
@@ -109,7 +107,6 @@ export default function Home() {
             </form>
           </div>
 
-          {/* Preview Area */}
           <div className="relative aspect-video w-full perspective-1000">
             {data ? (
               <div className="animate-in zoom-in fade-in duration-500">
@@ -166,9 +163,8 @@ export default function Home() {
           </div>
         </section>
 
-        {/* Footer */}
         <footer className="mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-white/20 text-xs font-mono pb-8">
-          <p>© 2026 CONTRIBUTION BLAST. BUILT FOR THE GRAPH.</p>
+          <p>© {new Date().getFullYear()} CONTRIBUTION BLAST. BUILT FOR THE GRAPH.</p>
           <div className="flex gap-6">
             <a href="/docs" className="hover:text-[#58a6ff] transition-colors">DOCUMENTATION</a>
             <a href="#" className="hover:text-[#3fb950] transition-colors">API REF</a>
