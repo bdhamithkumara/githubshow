@@ -170,7 +170,7 @@ export default function Home() {
         <footer className="mt-20 pt-8 border-t border-white/5 flex flex-col md:flex-row justify-between items-center gap-4 text-white/20 text-xs font-mono pb-8">
           <p>© 2026 CONTRIBUTION BLAST. BUILT FOR THE GRAPH.</p>
           <div className="flex gap-6">
-            <a href="#" className="hover:text-[#58a6ff] transition-colors">DOCUMENTATION</a>
+            <a href="/docs" className="hover:text-[#58a6ff] transition-colors">DOCUMENTATION</a>
             <a href="#" className="hover:text-[#3fb950] transition-colors">API REF</a>
             <a href="#" className="hover:text-white transition-colors">SOURCE</a>
           </div>
