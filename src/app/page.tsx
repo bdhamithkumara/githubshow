@@ -167,7 +167,7 @@ export default function Home() {
           <p>© {new Date().getFullYear()} CONTRIBUTION BLAST. BUILT FOR THE GRAPH.</p>
           <div className="flex gap-6">
             <a href="/docs" className="hover:text-[#58a6ff] transition-colors">DOCUMENTATION</a>
-            <a href="#" className="hover:text-[#3fb950] transition-colors">API REF</a>
+            <a href="/docs-api-reference" className="hover:text-[#3fb950] transition-colors">API REF</a>
             <a href="#" className="hover:text-white transition-colors">SOURCE</a>
           </div>
         </footer>

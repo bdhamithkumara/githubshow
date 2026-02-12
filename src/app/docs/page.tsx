@@ -23,7 +23,7 @@ export default function DocsPage() {
                         Back to Visualization
                     </Link>
 
-                    <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-gradient-to-r from-white to-white/60 bg-clip-text text-transparent">
+                    <h1 className="text-4xl md:text-5xl font-bold mb-4 bg-linear-to-r from-white to-white/60 bg-clip-text text-transparent">
                         Documentation
                     </h1>
                     <p className="text-xl text-white/40 max-w-2xl">
