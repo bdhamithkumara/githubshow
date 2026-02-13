@@ -64,6 +64,19 @@ export async function fetchGitHubContributions(username: string): Promise<Contri
   });
 
   if (!response.ok) {
+        // Check for rate limiting
+        const remaining = response.headers.get("x-ratelimit-remaining");
+        const resetTime = response.headers.get("x-ratelimit-reset");
+
+        if (response.status === 403 && remaining === "0" && resetTime) {
+            const resetDate = new Date(parseInt(resetTime) * 1000);
+            const now = new Date();
+            const diffMs = resetDate.getTime() - now.getTime();
+            const diffMins = Math.ceil(diffMs / 60000); // Minutes
+
+            throw new Error(`GitHub API rate limit exceeded. Try again in ${diffMins} minute${diffMins !== 1 ? 's' : ''}.`);
+        }
+
     throw new Error(`GitHub API error: ${response.statusText}`);
   }
 
